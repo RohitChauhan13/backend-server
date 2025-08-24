@@ -1,11 +1,21 @@
 const express = require('express');
-const { getAllData, createProductsTable, addProduct } = require('../Controllers/myController');
+const { createCustomersTable, addCustomer, showCustomers, modifyCustomer, deleteCustomer } = require('../Controllers/myController');
 const Router = express.Router();
 
-Router.get('/show-product', getAllData);
 
-Router.get('/', createProductsTable);
+// Home route: create customers table
+Router.get('/', createCustomersTable);
 
-Router.post('/add-product', addProduct);
+// Add customer
+Router.post('/customer', addCustomer);
+
+// Show all customers
+Router.get('/customers', showCustomers);
+
+// Modify customer (one or multiple fields)
+Router.put('/customer/:custid', modifyCustomer);
+
+// Delete customer
+Router.delete('/customer/:custid', deleteCustomer);
 
 module.exports = Router;
