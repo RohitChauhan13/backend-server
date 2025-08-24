@@ -1,5 +1,5 @@
 const express = require('express');
-const { createCustomersTable, addCustomer, showCustomers, modifyCustomer, deleteCustomer } = require('../Controllers/myController');
+const { createCustomersTable, addCustomer, showCustomers, modifyCustomer, deleteCustomer, deleteAllTables } = require('../Controllers/myController');
 const Router = express.Router();
 
 
@@ -17,5 +17,8 @@ Router.put('/customer/:custid', modifyCustomer);
 
 // Delete customer
 Router.delete('/customer/:custid', deleteCustomer);
+
+// Delete all tables from database.
+Router.delete('/deleteAllTables', deleteAllTables);
 
 module.exports = Router;

@@ -37,7 +37,14 @@ const addCustomer = async (req, res) => {
 
     // Process optional fields - convert empty strings to null
     const addressValue = (address && typeof address === 'string' && address.trim() !== '') ? address.trim() : null;
-    const medicinesValue = (medicines && typeof medicines === 'string' && medicines.trim() !== '') ? medicines.trim() : null;
+
+    // Handle medicines - convert comma separated string to array for PostgreSQL
+    let medicinesValue = null;
+    if (medicines && typeof medicines === 'string' && medicines.trim() !== '') {
+        const medicinesList = medicines.trim().split(',').map(med => med.trim()).filter(med => med !== '');
+        medicinesValue = medicinesList.length > 0 ? medicinesList : null;
+    }
+
     const emailValue = (email && typeof email === 'string' && email.trim() !== '') ? email.trim() : null;
 
     try {
@@ -98,11 +105,17 @@ const modifyCustomer = async (req, res) => {
         values.push(addressValue);
     }
 
-    // Medicines - can be null or string (comma separated allowed)
+    // Medicines - can be null or array (comma separated string converted to array)
     if (medicines !== undefined) {
-        const medicinesValue = (typeof medicines === 'string' && medicines.trim() !== '') ? medicines.trim() : null;
-        fields.push(`medicines = $${idx++}`);
-        values.push(medicinesValue);
+        if (typeof medicines === 'string' && medicines.trim() !== '') {
+            const medicinesList = medicines.trim().split(',').map(med => med.trim()).filter(med => med !== '');
+            const medicinesValue = medicinesList.length > 0 ? medicinesList : null;
+            fields.push(`medicines = ${idx++}`);
+            values.push(medicinesValue);
+        } else {
+            fields.push(`medicines = ${idx++}`);
+            values.push(null);
+        }
     }
 
     // Email - can be null or string
@@ -168,10 +181,44 @@ const deleteCustomer = async (req, res) => {
     }
 }
 
+// Delete all tables (for development/testing - use with caution)
+const deleteAllTables = async (req, res) => {
+    try {
+        // Get all table names first
+        const tableResult = await DB.query(`
+            SELECT tablename FROM pg_tables 
+            WHERE schemaname = 'public' 
+            AND tablename NOT LIKE 'pg_%' 
+            AND tablename NOT LIKE 'sql_%'
+        `);
+
+        if (tableResult.rows.length === 0) {
+            return res.json({ success: true, message: 'No tables found to delete.' });
+        }
+
+        // Drop all tables with CASCADE to handle dependencies
+        for (const row of tableResult.rows) {
+            await DB.query(`DROP TABLE IF EXISTS "${row.tablename}" CASCADE`);
+        }
+
+        const deletedTables = tableResult.rows.map(row => row.tablename);
+
+        return res.json({
+            success: true,
+            message: `All tables deleted successfully.`,
+            deletedTables: deletedTables
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ success: false, message: 'Error deleting tables.' });
+    }
+}
+
 module.exports = {
     createCustomersTable,
     addCustomer,
     showCustomers,
     modifyCustomer,
-    deleteCustomer
+    deleteCustomer,
+    deleteAllTables
 }
