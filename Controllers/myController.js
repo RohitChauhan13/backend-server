@@ -7,7 +7,7 @@ const createCustomersTable = async (req, res) => {
             custid SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             address TEXT,
-            medicines TEXT[],
+            medicines TEXT,
             email VARCHAR(100),
             mobile VARCHAR(20) UNIQUE
         )`);
@@ -24,13 +24,20 @@ const addCustomer = async (req, res) => {
     if (!name || !mobile) {
         return res.status(400).json({ success: false, message: 'Name and mobile are required.' });
     }
-    if (!Array.isArray(medicines)) {
-        return res.status(400).json({ success: false, message: 'Medicines must be an array.' });
+    let medicinesStr = '';
+    if (medicines) {
+        if (Array.isArray(medicines)) {
+            medicinesStr = medicines.join(',');
+        } else if (typeof medicines === 'string') {
+            medicinesStr = medicines;
+        } else {
+            return res.status(400).json({ success: false, message: 'Medicines must be a string or array.' });
+        }
     }
     try {
         const result = await DB.query(
             'INSERT INTO Customers (name, address, medicines, email, mobile) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [name, address || '', medicines, email || '', mobile]
+            [name, address || '', medicinesStr, email || '', mobile]
         );
         return res.json({ success: true, message: 'Customer added.', customer: result.rows[0] });
     } catch (err) {
@@ -70,7 +77,17 @@ const modifyCustomer = async (req, res) => {
     let idx = 1;
     if (name) { fields.push(`name = $${idx++}`); values.push(name); }
     if (address) { fields.push(`address = $${idx++}`); values.push(address); }
-    if (Array.isArray(medicines)) { fields.push(`medicines = $${idx++}`); values.push(medicines); }
+    if (medicines) {
+        let medicinesStr = '';
+        if (Array.isArray(medicines)) {
+            medicinesStr = medicines.join(',');
+        } else if (typeof medicines === 'string') {
+            medicinesStr = medicines;
+        } else {
+            return res.status(400).json({ success: false, message: 'Medicines must be a string or array.' });
+        }
+        fields.push(`medicines = $${idx++}`); values.push(medicinesStr);
+    }
     if (email) { fields.push(`email = $${idx++}`); values.push(email); }
     if (mobile) { fields.push(`mobile = $${idx++}`); values.push(mobile); }
     if (fields.length === 0) {

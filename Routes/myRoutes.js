@@ -7,10 +7,10 @@ const Router = express.Router();
 Router.get('/', createCustomersTable);
 
 // Add customer
-Router.post('/customer', addCustomer);
+Router.post('/add-customer', addCustomer);
 
 // Show all customers
-Router.get('/customers', showCustomers);
+Router.get('/show-customer', showCustomers);
 
 // Modify customer (one or multiple fields)
 Router.put('/customer/:custid', modifyCustomer);
