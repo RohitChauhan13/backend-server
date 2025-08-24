@@ -21,16 +21,20 @@ const createCustomersTable = async (req, res) => {
 // Add customer
 const addCustomer = async (req, res) => {
     const { name, address, medicines, email, mobile } = req.body || {};
-    if (!name) {
-        return res.status(400).json({ success: false, message: 'Name is required.' });
+    if (typeof name !== 'string' || name.trim() === '') {
+        return res.status(400).json({ success: false, message: 'Name is required and must be a string.' });
     }
-    if (!mobile) {
-        return res.status(400).json({ success: false, message: 'Mobile is required.' });
+    if (typeof mobile !== 'string' || mobile.trim() === '') {
+        return res.status(400).json({ success: false, message: 'Mobile is required and must be a string.' });
     }
+    // All other fields are optional and treated as strings
+    const addressStr = typeof address === 'string' ? address : '';
+    const medicinesStr = typeof medicines === 'string' ? medicines : '';
+    const emailStr = typeof email === 'string' ? email : '';
     try {
         const result = await DB.query(
             'INSERT INTO Customers (name, address, medicines, email, mobile) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [name, address || '', medicines || '', email || '', mobile]
+            [name, addressStr, medicinesStr, emailStr, mobile]
         );
         return res.json({ success: true, message: 'Customer added.', customer: result.rows[0] });
     } catch (err) {
@@ -66,11 +70,11 @@ const modifyCustomer = async (req, res) => {
     const fields = [];
     const values = [];
     let idx = 1;
-    if (name) { fields.push(`name = $${idx++}`); values.push(name); }
-    if (address) { fields.push(`address = $${idx++}`); values.push(address); }
-    if (medicines) { fields.push(`medicines = $${idx++}`); values.push(medicines); }
-    if (email) { fields.push(`email = $${idx++}`); values.push(email); }
-    if (mobile) { fields.push(`mobile = $${idx++}`); values.push(mobile); }
+    if (typeof name === 'string' && name.trim() !== '') { fields.push(`name = $${idx++}`); values.push(name); }
+    if (typeof address === 'string') { fields.push(`address = $${idx++}`); values.push(address); }
+    if (typeof medicines === 'string') { fields.push(`medicines = $${idx++}`); values.push(medicines); }
+    if (typeof email === 'string') { fields.push(`email = $${idx++}`); values.push(email); }
+    if (typeof mobile === 'string' && mobile.trim() !== '') { fields.push(`mobile = $${idx++}`); values.push(mobile); }
     if (fields.length === 0) {
         return res.status(400).json({ success: false, message: 'No fields to update.' });
     }
